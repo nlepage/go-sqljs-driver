@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"syscall/js"
+
+	promise "github.com/nlepage/go-js-promise"
 )
 
 func init() {
@@ -15,7 +17,7 @@ type Driver struct {
 }
 
 func (d *Driver) Open(name string) (driver.Conn, error) {
-	SQL, err := Await(js.Global().Call("initSqlJs", d.config()))
+	SQL, err := promise.Await(js.Global().Call("initSqlJs", d.config()))
 	if err != nil {
 		return nil, err
 	}
