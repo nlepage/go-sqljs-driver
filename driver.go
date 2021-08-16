@@ -29,7 +29,11 @@ func (d *Driver) Open(name string) (driver.Conn, error) {
 func (d *Driver) config() map[string]interface{} {
 	config := make(map[string]interface{}, 1)
 	if d.LocateFile != nil {
-		config["locateFile"] = js.FuncOf(d.LocateFile)
+		config["locateFile"] = js.FuncOf(d.locateFileFn)
 	}
 	return config
+}
+
+func (d *Driver) locateFileFn(_ js.Value, args []js.Value) interface{} {
+	return d.LocateFile(args[0].String())
 }
