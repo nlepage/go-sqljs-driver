@@ -1,6 +1,7 @@
 package sqljs
 
 import (
+	"context"
 	"database/sql/driver"
 	"errors"
 	"syscall/js"
@@ -10,15 +11,40 @@ type Conn struct {
 	js.Value
 }
 
-func (c *Conn) Prepare(query string) (driver.Stmt, error) {
-	return nil, errors.New("NOT IMPLEMENTED")
+func (c *Conn) Prepare(query string) (stmt driver.Stmt, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(js.Error)
+		}
+	}()
+
+	stmt = &Stmt{c.Call("Prepare", query)}
+
+	return
 }
 
-func (c *Conn) Close() error {
-	return errors.New("NOT IMPLEMENTED")
+func (c *Conn) Close() (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(js.Error)
+		}
+	}()
+
+	c.Call("close")
+
+	return
 }
 
-// Deprecated: Drivers should implement ConnBeginTx instead (or additionally).
 func (c *Conn) Begin() (driver.Tx, error) {
+	return c.BeginTx(context.Background(), driver.TxOptions{})
+}
+
+var _ driver.ConnBeginTx = &Conn{}
+
+func (c *Conn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx, error) {
 	return nil, errors.New("NOT IMPLEMENTED")
 }
+
+// FIXME All Conn implementations should implement the following interfaces: Pinger, SessionResetter, and Validator.
+
+// FIXME If named parameters or context are supported, the driver's Conn should implement: ExecerContext, QueryerContext, ConnPrepareContext, and ConnBeginTx.
