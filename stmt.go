@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql/driver"
 	"errors"
+	"fmt"
+	"io"
 	"strconv"
 	"syscall/js"
 )
@@ -41,7 +43,10 @@ func (stmt *Stmt) ExecContext(ctx context.Context, args []driver.NamedValue) (re
 		}
 	}()
 
-	stmt.Call("run", namedValuesToBindParams(args))
+	if ok := stmt.Call("run", namedValuesToBindParams(args)).Bool(); !ok {
+		err = errors.New("statement was not reset") // return value of run is the return value of reset
+		return
+	}
 
 	res = &Result{}
 
@@ -50,8 +55,81 @@ func (stmt *Stmt) ExecContext(ctx context.Context, args []driver.NamedValue) (re
 
 var _ driver.StmtQueryContext = &Stmt{}
 
-func (stmt *Stmt) QueryContext(ctx context.Context, args []driver.NamedValue) (driver.Rows, error) {
-	return nil, errors.New("not implemented")
+func (stmt *Stmt) QueryContext(ctx context.Context, args []driver.NamedValue) (rows driver.Rows, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(js.Error)
+		}
+	}()
+
+	// Don't check return value, bind always returns true
+	stmt.Call("bind", namedValuesToBindParams(args))
+
+	rows = &StmtRows{stmt.Value}
+
+	return
+}
+
+type StmtRows struct {
+	js.Value
+}
+
+func (stmt *StmtRows) Columns() []string {
+	v := stmt.Call("getColumnNames")
+	length := v.Length()
+	columns := make([]string, length)
+	for i := 0; i < length; i++ {
+		columns[i] = v.Index(i).String()
+	}
+	return columns
+}
+
+func (stmt *StmtRows) Close() (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(js.Error)
+		}
+	}()
+
+	if ok := stmt.Call("reset").Bool(); !ok {
+		err = errors.New("statement was not reset")
+		return
+	}
+
+	return
+}
+
+func (stmt *StmtRows) Next(dest []driver.Value) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(js.Error)
+		}
+	}()
+
+	if ok := stmt.Call("step").Bool(); !ok {
+		err = io.EOF
+		return
+	}
+
+	row := stmt.Call("get")
+	length := row.Length()
+	for i := 0; i < length; i++ {
+		v := row.Index(i)
+		switch v.Type() {
+		case js.TypeNull:
+			dest[i] = nil
+		case js.TypeNumber:
+			dest[i] = v.Float()
+		case js.TypeString:
+			dest[i] = v.String()
+		// FIXME Uint8Array to []byte
+		default:
+			err = fmt.Errorf("unknown SqlValue type %s", v.Type())
+			return
+		}
+	}
+
+	return
 }
 
 func valuesToNamedValues(values []driver.Value) []driver.NamedValue {
@@ -63,7 +141,12 @@ func valuesToNamedValues(values []driver.Value) []driver.NamedValue {
 	return nValues
 }
 
+// see https://sql.js.org/documentation/Statement.html#.BindParams
 func namedValuesToBindParams(values []driver.NamedValue) interface{} {
+	if values == nil {
+		return nil
+	}
+
 	named := false
 	for _, value := range values {
 		if value.Name != "" {
