@@ -163,7 +163,7 @@ func namedValuesToBindParams(values []driver.NamedValue) interface{} {
 			if value.Name == "" {
 				params[strconv.Itoa(value.Ordinal)] = value.Value
 			} else {
-				// blindly bind each param 3 times
+				// Blindly bind each param 3 times
 				for _, prefix := range namedParamPrefixes {
 					params[prefix+value.Name] = value.Value
 				}
