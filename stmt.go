@@ -141,6 +141,8 @@ func valuesToNamedValues(values []driver.Value) []driver.NamedValue {
 	return nValues
 }
 
+var namedParamPrefixes = [...]string{":", "@", "$"}
+
 // see https://sql.js.org/documentation/Statement.html#.BindParams
 func namedValuesToBindParams(values []driver.NamedValue) interface{} {
 	if values == nil {
@@ -156,12 +158,15 @@ func namedValuesToBindParams(values []driver.NamedValue) interface{} {
 	}
 
 	if named {
-		params := make(map[string]interface{}, len(values))
+		params := make(map[string]interface{}, len(values)*3)
 		for _, value := range values {
 			if value.Name == "" {
 				params[strconv.Itoa(value.Ordinal)] = value.Value
 			} else {
-				params[value.Name] = value.Value
+				// for now do like go-sqlite3, blindly bind each param 3 times
+				for _, prefix := range namedParamPrefixes {
+					params[prefix+value.Name] = value.Value
+				}
 			}
 		}
 		return params
