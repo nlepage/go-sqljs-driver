@@ -1,5 +1,9 @@
 # go-sqljs-driver
 
+Go SQL driver for [sql.js](https://github.com/sql-js/sql.js).
+
+⚠️ This project is experimental. ⚠️
+
 ## Caveats
 
 ### Named parameters prefixes
