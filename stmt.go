@@ -39,7 +39,7 @@ var _ driver.StmtExecContext = &Stmt{}
 func (stmt *Stmt) ExecContext(ctx context.Context, args []driver.NamedValue) (res driver.Result, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = errors.New(r.(string))
+			err = recoveredToError(r)
 		}
 	}()
 
@@ -58,7 +58,7 @@ var _ driver.StmtQueryContext = &Stmt{}
 func (stmt *Stmt) QueryContext(ctx context.Context, args []driver.NamedValue) (rows driver.Rows, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = r.(js.Error)
+			err = recoveredToError(r)
 		}
 	}()
 
@@ -87,7 +87,7 @@ func (stmt *StmtRows) Columns() []string {
 func (stmt *StmtRows) Close() (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = r.(js.Error)
+			err = recoveredToError(r)
 		}
 	}()
 
@@ -102,7 +102,7 @@ func (stmt *StmtRows) Close() (err error) {
 func (stmt *StmtRows) Next(dest []driver.Value) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = r.(js.Error)
+			err = recoveredToError(r)
 		}
 	}()
 
@@ -163,7 +163,7 @@ func namedValuesToBindParams(values []driver.NamedValue) interface{} {
 			if value.Name == "" {
 				params[strconv.Itoa(value.Ordinal)] = value.Value
 			} else {
-				// for now do like go-sqlite3, blindly bind each param 3 times
+				// blindly bind each param 3 times
 				for _, prefix := range namedParamPrefixes {
 					params[prefix+value.Name] = value.Value
 				}

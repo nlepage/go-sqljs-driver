@@ -14,7 +14,7 @@ type Conn struct {
 func (c *Conn) Prepare(query string) (stmt driver.Stmt, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = r.(js.Error)
+			err = recoveredToError(r)
 		}
 	}()
 
@@ -26,7 +26,7 @@ func (c *Conn) Prepare(query string) (stmt driver.Stmt, err error) {
 func (c *Conn) Close() (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = r.(js.Error)
+			err = recoveredToError(r)
 		}
 	}()
 
