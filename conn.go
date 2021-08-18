@@ -18,7 +18,7 @@ func (c *Conn) Prepare(query string) (stmt driver.Stmt, err error) {
 		}
 	}()
 
-	stmt = &Stmt{c.Call("Prepare", query)}
+	stmt = &Stmt{c.Call("prepare", query)}
 
 	return
 }

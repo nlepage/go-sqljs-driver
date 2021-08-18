@@ -39,7 +39,7 @@ var _ driver.StmtExecContext = &Stmt{}
 func (stmt *Stmt) ExecContext(ctx context.Context, args []driver.NamedValue) (res driver.Result, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = r.(js.Error)
+			err = errors.New(r.(string))
 		}
 	}()
 
@@ -156,7 +156,7 @@ func namedValuesToBindParams(values []driver.NamedValue) interface{} {
 	}
 
 	if named {
-		params := make(map[string]driver.Value, len(values))
+		params := make(map[string]interface{}, len(values))
 		for _, value := range values {
 			if value.Name == "" {
 				params[strconv.Itoa(value.Ordinal)] = value.Value
@@ -167,7 +167,7 @@ func namedValuesToBindParams(values []driver.NamedValue) interface{} {
 		return params
 	}
 
-	params := make([]driver.Value, len(values))
+	params := make([]interface{}, len(values))
 	for _, value := range values {
 		params[value.Ordinal-1] = value.Value
 	}

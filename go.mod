@@ -1,4 +1,4 @@
-module go-sqljs-driver
+module github.com/nlepage/go-sqljs-driver
 
 go 1.16
 
