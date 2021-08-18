@@ -1,0 +1,8 @@
+{
+  "name": "go-sqljs-driver",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "sql.js": "^1.6.1"
+  }
+}

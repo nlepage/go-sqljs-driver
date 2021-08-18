@@ -1,0 +1,4 @@
+node_modules/
+*.wasm
+docs/go_wasm_exec_1.16.7.js
+yarn-error.log
